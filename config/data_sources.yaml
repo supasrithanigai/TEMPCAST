@@ -1,0 +1,72 @@
+# TEMPESTCAST Data Source Configuration
+# SIH 2026 - Problem Statement PS 26072
+
+radar:
+  enabled: true
+  source: "Doppler Weather Radar (DWR) Network"
+  network: "IMD / NEXRAD Compatible Level-II"
+  bands: ["C-Band", "S-Band", "X-Band"]
+  path: "data/raw/radar"
+  update_interval_minutes: 5
+  spatial_resolution_deg: 0.01
+  max_range_km: 250
+  variables:
+    - reflectivity_dbz
+    - differential_reflectivity_zdr
+    - specific_differential_phase_kdp
+    - radial_velocity_mps
+
+satellite:
+  enabled: true
+  source: "INSAT-3D / 3DR / GOES-16 Geostationary"
+  channels:
+    - "Thermal_IR1_10.8um"
+    - "Water_Vapour_6.7um"
+    - "Visible_0.65um"
+  path: "data/raw/satellite"
+  update_interval_minutes: 15
+  spatial_resolution_km: 4.0
+  derived_metrics:
+    - brightness_temperature_kelvin
+    - cloud_top_cooling_rate_k_per_15m
+    - cloud_top_height_km
+
+lightning:
+  enabled: true
+  source: "Lightning Location Network (LLN) / GLM"
+  path: "data/raw/lightning"
+  update_interval_minutes: 1
+  detection_efficiency_pct: 95.0
+  metrics:
+    - cloud_to_ground_strikes
+    - intra_cloud_strikes
+    - total_flash_density
+    - peak_current_ka
+    - lightning_jump_rate
+
+weather:
+  enabled: true
+  source: "Automatic Weather Stations (AWS) / Surface Mesonet"
+  path: "data/raw/weather"
+  update_interval_minutes: 5
+  variables:
+    - surface_temperature_c
+    - relative_humidity_pct
+    - wind_speed_kmh
+    - wind_direction_deg
+    - surface_pressure_hpa
+    - precipitation_rate_mmh
+    - dew_point_temperature_c
+
+nwp:
+  enabled: true
+  source: "WRF / GFS High-Resolution Meso-Model"
+  path: "data/raw/nwp"
+  update_interval_hours: 3
+  forecast_lead_hours: 6
+  variables:
+    - convective_available_potential_energy_cape
+    - convective_inhibition_cin
+    - lifted_index_li
+    - bulk_shear_0_6km_knots
+    - precipitable_water_mm

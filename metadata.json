@@ -1,0 +1,6 @@
+{
+  "name": "TEMPESTCAST",
+  "description": "AI-Powered Thunderstorm & Lightning Nowcasting disaster management system predicting 30–90 minute convective storm and lightning risks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

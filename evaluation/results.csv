@@ -1,0 +1,16 @@
+model,lead_time_min,csi,pod,far,precision,f1_score,brier_score,roc_auc
+AI_ConvLSTM,30,0.74,0.88,0.17,0.83,0.85,0.082,0.94
+AI_ConvLSTM,45,0.69,0.84,0.20,0.80,0.81,0.104,0.91
+AI_ConvLSTM,60,0.63,0.79,0.24,0.76,0.76,0.128,0.87
+AI_ConvLSTM,75,0.56,0.72,0.29,0.71,0.71,0.155,0.82
+AI_ConvLSTM,90,0.49,0.65,0.35,0.65,0.64,0.186,0.77
+Advection_Baseline,30,0.62,0.75,0.22,0.78,0.76,0.135,0.84
+Advection_Baseline,45,0.51,0.66,0.31,0.69,0.67,0.175,0.77
+Advection_Baseline,60,0.42,0.58,0.39,0.61,0.59,0.215,0.71
+Advection_Baseline,75,0.33,0.49,0.48,0.52,0.50,0.255,0.64
+Advection_Baseline,90,0.24,0.38,0.58,0.42,0.39,0.298,0.58
+Persistence_Baseline,30,0.52,0.68,0.29,0.71,0.69,0.165,0.78
+Persistence_Baseline,45,0.39,0.54,0.42,0.58,0.56,0.225,0.68
+Persistence_Baseline,60,0.28,0.41,0.54,0.46,0.43,0.285,0.59
+Persistence_Baseline,75,0.18,0.29,0.66,0.34,0.30,0.345,0.52
+Persistence_Baseline,90,0.11,0.19,0.76,0.24,0.20,0.410,0.48
