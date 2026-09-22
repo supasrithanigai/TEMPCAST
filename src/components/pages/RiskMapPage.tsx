@@ -56,15 +56,15 @@ export const RiskMapPage: React.FC<RiskMapPageProps> = ({
             <span>•</span>
             <span className="text-slate-400">Leaflet.js + OpenStreetMap</span>
             <span>•</span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-              SIMULATED SPATIAL DATA
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              ORIGINAL DATASETS
             </span>
           </div>
           <h2 className="text-lg font-bold text-white mt-0.5">
             Geographic Risk Zones &amp; Storm Vector Trajectory
           </h2>
           <p className="text-xs text-slate-400">
-            Simulated overlay of convective risk polygons, lightning flash clusters, and critical infrastructure sites for demonstration.
+            Geospatial overlay of convective risk polygons, lightning flash clusters, and critical infrastructure sites for civil protection.
           </p>
         </div>
 

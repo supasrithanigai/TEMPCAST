@@ -9,13 +9,37 @@ import {
   CloudRain,
   Flame,
   Radio,
+  FileQuestion,
 } from 'lucide-react';
 
 interface WeatherCardProps {
-  weather: WeatherData;
+  weather: WeatherData | null;
 }
 
 export const WeatherCard: React.FC<WeatherCardProps> = ({ weather }) => {
+  if (!weather) {
+    return (
+      <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-6 sm:p-8 text-center space-y-3 shadow-sm">
+        <div className="w-12 h-12 rounded-xl bg-slate-800/80 text-amber-400 flex items-center justify-center mx-auto">
+          <FileQuestion className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center justify-center gap-2">
+            <h3 className="text-base font-bold text-white">
+              Surface Atmospheric Telemetry
+            </h3>
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+              Awaiting Original Dataset
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            No weather observations currently ingested. Upload original station observation files (CSV, XLS, XLSX, or TXT) in the Datasets section to view verified atmospheric variables.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const items = [
     {
       id: 'temp',
@@ -89,37 +113,35 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({ weather }) => {
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             Surface Atmospheric Telemetry
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-amber-300 font-semibold border border-slate-700">
-              Live Feed
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+              ORIGINAL DATASET
             </span>
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Station Observatory: <span className="text-slate-200 font-medium">{weather.location_name}</span>
+            Station Source: <span className="text-slate-200 font-medium">{weather.location_name}</span>
           </p>
         </div>
         <div className="text-xs font-mono text-slate-400 bg-slate-950/70 px-3 py-1 rounded-lg border border-slate-800 w-fit">
-          Sync: {new Date(weather.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          Timestamp: {new Date(weather.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
-        {items.map((it) => {
-          const Icon = it.icon;
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+        {items.map((item) => {
+          const Icon = item.icon;
           return (
             <div
-              key={it.id}
-              className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/90 hover:border-slate-700 transition-all flex flex-col justify-between"
+              key={item.id}
+              className="rounded-lg bg-slate-950/70 border border-slate-800/80 p-3.5 hover:border-slate-700 transition-colors"
             >
-              <div className="flex items-center justify-between text-slate-400 mb-2">
-                <span className="text-xs font-semibold">{it.label}</span>
-                <Icon className={`w-4 h-4 ${it.color}`} />
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-400">{item.label}</span>
+                <Icon className={`w-4 h-4 ${item.color}`} />
               </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-black font-mono text-white tracking-tight">
-                  {it.value}
-                </div>
-                <div className="text-[11px] text-slate-400 mt-1 truncate font-medium">{it.subvalue}</div>
+              <div className="text-xl sm:text-2xl font-bold text-white font-mono mt-1">
+                {item.value}
               </div>
+              <div className="text-[11px] text-slate-400 mt-1 truncate">{item.subvalue}</div>
             </div>
           );
         })}

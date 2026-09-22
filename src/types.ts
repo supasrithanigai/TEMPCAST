@@ -9,17 +9,64 @@ export type AlertType =
 
 export type AlertStatus = 'ACTIVE' | 'WATCH' | 'WARNING' | 'EXPIRED';
 
-export type DataSourceStatus = 'Available' | 'Processing' | 'Delayed' | 'Demo Data' | 'Degraded';
+export type DataSourceStatus =
+  | 'Available'
+  | 'Processing'
+  | 'Delayed'
+  | 'ORIGINAL DATASET'
+  | 'Awaiting Dataset'
+  | 'Degraded';
 
 export type QualityFlag = 'GOOD' | 'SUSPECT' | 'MISSING' | 'INVALID';
 
-export type DataMode = 'REAL' | 'HISTORICAL' | 'DEMO';
+export type DataMode = 'REAL' | 'HISTORICAL' | 'ORIGINAL DATASET';
+
+export type DatasetCategory =
+  | 'Radar'
+  | 'Satellite'
+  | 'Lightning'
+  | 'Weather Observations'
+  | 'NWP'
+  | 'GIS'
+  | 'Other';
+
+export type DatasetProcessingStatus = 'UPLOADED' | 'VALIDATING' | 'READY' | 'ERROR';
+
+export interface UploadedDatasetFile {
+  id: string;
+  name: string;
+  format: string; // ZIP, CSV, JSON, XLS, XLSX, TXT, NC, NETCDF, GRIB, GRIB2, GEOJSON
+  sizeBytes: number;
+  category: DatasetCategory;
+  status: DatasetProcessingStatus;
+  isOriginal: true;
+  uploadedAt: string;
+  errorMessage?: string;
+  // Detected attributes:
+  variablesDetected: string[];
+  columnsDetected: string[];
+  timestampsDetected: string[];
+  hasCoordinates: boolean;
+  latitudeRange?: [number, number];
+  longitudeRange?: [number, number];
+  missingValuesCount: number;
+  totalRecordsCount: number;
+  datasetType: string;
+  rawTextPreview?: string;
+  parsedSummary?: string;
+  isZipped?: boolean;
+  parentZipName?: string;
+  rawFile?: File;
+  detectedStates?: string[];
+  state?: string;
+}
 
 export interface LocationItem {
   id: string;
   name: string;
   code: string;
   region: string;
+  state?: string;
   latitude: number;
   longitude: number;
   vulnerability_level: RiskLevel;
@@ -31,6 +78,7 @@ export interface WeatherData {
   id: string;
   location_id: string;
   location_name: string;
+  state?: string;
   temperature_c: number;
   humidity_percent: number;
   wind_speed_kmh: number;
@@ -76,6 +124,7 @@ export interface StormEntity {
   id: string;
   storm_id: string;
   name: string;
+  state?: string;
   current_location: {
     lat: number;
     lng: number;
@@ -134,6 +183,7 @@ export interface LightningHotspot {
   id: string;
   lat: number;
   lng: number;
+  state?: string;
   strike_rate_per_min: number;
   peak_current_ka: number;
   type: 'CG' | 'IC'; // Cloud-to-Ground or Intra-Cloud
@@ -157,6 +207,7 @@ export interface VulnerableLocation {
 export interface RiskZonePolygon {
   id: string;
   name: string;
+  state?: string;
   risk_level: RiskLevel;
   severity: string;
   probability: number;

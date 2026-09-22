@@ -21,6 +21,7 @@ import {
   fetchVulnerableLocations,
   fetchDataSources,
 } from './services/api';
+import { datasetService } from './services/datasetService';
 import { Header } from './components/common/Header';
 import { Sidebar, PageId } from './components/common/Sidebar';
 import { LoadingState, ErrorState } from './components/common/States';
@@ -33,6 +34,8 @@ import { StormTrackingPage } from './components/pages/StormTrackingPage';
 import { AlertsPage } from './components/pages/AlertsPage';
 import { DataStatusPage } from './components/pages/DataStatusPage';
 import { AIModelPage } from './components/pages/AIModelPage';
+import { AIAlgorithmPage } from './components/pages/AIAlgorithmPage';
+import { DatasetsPage } from './components/pages/DatasetsPage';
 import { AboutPage } from './components/pages/AboutPage';
 
 export default function App() {
@@ -40,7 +43,7 @@ export default function App() {
   const [locations, setLocations] = useState<LocationItem[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<LocationItem | null>(null);
 
-  // Core Data States
+  // Core Data States from Original Datasets
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [predictions, setPredictions] = useState<PredictionHorizon[]>([]);
   const [storms, setStorms] = useState<StormEntity[]>([]);
@@ -72,11 +75,45 @@ export default function App() {
     init();
   }, []);
 
+  // Subscribe to dataset updates so UI updates immediately when original files are uploaded
+  useEffect(() => {
+    const unsubscribe = datasetService.subscribe(async () => {
+      const activeState = datasetService.getSelectedState();
+      if (activeState) {
+        const locs = await fetchLocations(activeState);
+        setLocations(locs);
+        if (locs.length > 0 && (!selectedLocation || !locs.some((l) => l.id === selectedLocation.id))) {
+          setSelectedLocation(locs[0]);
+          loadAllData(locs[0].id);
+          return;
+        }
+      }
+      if (selectedLocation) {
+        loadAllData(selectedLocation.id);
+      }
+    });
+    return unsubscribe;
+  }, [selectedLocation?.id]);
+
   // Fetch telemetry whenever selectedLocation changes
   useEffect(() => {
     if (!selectedLocation) return;
     loadAllData(selectedLocation.id);
   }, [selectedLocation?.id]);
+
+  const handleSelectState = async (stateName: string) => {
+    datasetService.setSelectedState(stateName);
+    try {
+      const locs = await fetchLocations(stateName);
+      setLocations(locs);
+      if (locs.length > 0) {
+        setSelectedLocation(locs[0]);
+        loadAllData(locs[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to change state', err);
+    }
+  };
 
   const loadAllData = async (locId: string) => {
     try {
@@ -106,6 +143,8 @@ export default function App() {
       setStorms(sData);
       if (sData.length > 0 && !selectedStorm) {
         setSelectedStorm(sData[0]);
+      } else if (sData.length === 0) {
+        setSelectedStorm(null);
       }
       setAlerts(aData);
       setRiskZones(rzData);
@@ -156,33 +195,35 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         {/* Navigation Sidebar */}
         <Sidebar
-          activePage={activePage}
+          currentPage={activePage}
           onNavigate={(page) => {
             setActivePage(page);
             setIsSidebarOpen(false);
           }}
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          alertCount={activeAlertCount}
+          isOpenMobile={isSidebarOpen}
+          onToggleMobile={() => setIsSidebarOpen(!isSidebarOpen)}
+          activeAlertsCount={activeAlertCount}
         />
 
         {/* Dynamic Content Canvas */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-b from-slate-950 via-slate-900/30 to-slate-950">
           {loading ? (
             <div className="min-h-[500px] flex items-center justify-center">
-              <LoadingState message="Connecting to atmospheric telemetry pipelines &amp; running ConvLSTM nowcasting rollout..." />
+              <LoadingState message="Connecting to meteorological telemetry pipelines..." />
             </div>
           ) : error ? (
             <div className="min-h-[400px] flex items-center justify-center">
               <ErrorState
-                title="Feed Ingestion Error"
+                title="Telemetry Ingestion Error"
                 message={error}
                 onRetry={handleRefresh}
               />
             </div>
-          ) : selectedLocation && weather && predictions.length > 0 ? (
+          ) : (
             <>
-              {activePage === 'dashboard' && (
+              {activePage === 'datasets' && <DatasetsPage />}
+
+              {activePage === 'dashboard' && selectedLocation && (
                 <DashboardPage
                   location={selectedLocation}
                   weather={weather}
@@ -193,10 +234,11 @@ export default function App() {
                   dataSources={dataSources}
                   onNavigate={setActivePage}
                   onSelectStorm={setSelectedStorm}
+                  onSelectState={handleSelectState}
                 />
               )}
 
-              {activePage === 'risk-map' && (
+              {activePage === 'risk-map' && selectedLocation && (
                 <RiskMapPage
                   location={selectedLocation}
                   storms={storms}
@@ -209,7 +251,7 @@ export default function App() {
                 />
               )}
 
-              {activePage === 'predictions' && (
+              {activePage === 'predictions' && selectedLocation && (
                 <PredictionsPage
                   location={selectedLocation}
                   predictions={predictions}
@@ -231,11 +273,22 @@ export default function App() {
                 <DataStatusPage dataSources={dataSources} />
               )}
 
-              {activePage === 'ai-model' && <AIModelPage />}
+              {(activePage === 'ai-algorithm' || activePage === 'ai-model') && selectedLocation && (
+                <AIAlgorithmPage
+                  location={selectedLocation}
+                  weather={weather}
+                  predictions={predictions}
+                  storms={storms}
+                  alerts={alerts}
+                  riskZones={riskZones}
+                  lightningHotspots={lightningHotspots}
+                  dataSources={dataSources}
+                />
+              )}
 
               {activePage === 'about' && <AboutPage />}
             </>
-          ) : null}
+          )}
         </main>
       </div>
     </div>

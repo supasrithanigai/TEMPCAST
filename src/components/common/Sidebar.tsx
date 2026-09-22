@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ExternalLink,
+  FolderArchive,
 } from 'lucide-react';
 
 export type PageId =
@@ -18,8 +19,10 @@ export type PageId =
   | 'predictions'
   | 'storm-tracking'
   | 'alerts'
+  | 'datasets'
   | 'data-status'
   | 'ai-model'
+  | 'ai-algorithm'
   | 'about';
 
 interface SidebarProps {
@@ -36,8 +39,8 @@ const NAV_ITEMS = [
   { id: 'predictions' as PageId, label: 'Predictions', icon: TrendingUp, badge: '30-90m' },
   { id: 'storm-tracking' as PageId, label: 'Storm Tracking', icon: Radar },
   { id: 'alerts' as PageId, label: 'Alerts', icon: Bell, hasAlertBadge: true },
-  { id: 'data-status' as PageId, label: 'Data Status', icon: Database },
-  { id: 'ai-model' as PageId, label: 'AI Model', icon: Cpu, badge: 'CNN+LSTM' },
+  { id: 'datasets' as PageId, label: 'Datasets', icon: FolderArchive, badge: 'Upload' },
+  { id: 'ai-algorithm' as PageId, label: 'AI Algorithm', icon: Cpu, badge: 'CNN+LSTM' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -88,7 +91,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPage === item.id;
+            const isActive =
+              currentPage === item.id ||
+              (item.id === 'ai-algorithm' && currentPage === 'ai-model');
             return (
               <button
                 key={item.id}

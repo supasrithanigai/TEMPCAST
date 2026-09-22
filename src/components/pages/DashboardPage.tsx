@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   WeatherData,
   PredictionHorizon,
@@ -15,10 +15,11 @@ import { RiskChart } from '../common/RiskChart';
 import { AlertCard } from '../common/AlertCard';
 import { StormCard } from '../common/StormCard';
 import { LeafletMap } from '../map/LeafletMap';
+import { DatasetStatusWidget } from '../common/DatasetStatusWidget';
+import { datasetService, DatasetStatusSummary } from '../../services/datasetService';
 import {
   Thermometer,
   CloudLightning,
-  Zap,
   CheckCircle2,
   Bell,
   Radar,
@@ -26,16 +27,16 @@ import {
   ArrowRight,
   Info,
   Clock,
-  Shield,
-  Layers,
   ChevronDown,
   ChevronUp,
+  UploadCloud,
+  FileQuestion,
 } from 'lucide-react';
 import { PageId } from '../common/Sidebar';
 
 interface DashboardPageProps {
   location: LocationItem;
-  weather: WeatherData;
+  weather: WeatherData | null;
   predictions: PredictionHorizon[];
   storms: StormEntity[];
   alerts: AlertItem[];
@@ -43,6 +44,7 @@ interface DashboardPageProps {
   dataSources: DataSourceItem[];
   onNavigate: (page: PageId) => void;
   onSelectStorm: (storm: StormEntity) => void;
+  onSelectState?: (state: string) => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -55,8 +57,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   dataSources,
   onNavigate,
   onSelectStorm,
+  onSelectState,
 }) => {
   const [showAllHorizons, setShowAllHorizons] = useState(false);
+  const [datasetSummary, setDatasetSummary] = useState<DatasetStatusSummary>(() =>
+    datasetService.getDatasetStatusSummary()
+  );
+
+  // Subscribe to dataset updates so Dashboard status reflects uploads in real-time
+  useEffect(() => {
+    const updateSummary = () => {
+      setDatasetSummary(datasetService.getDatasetStatusSummary());
+    };
+    updateSummary();
+    const unsubscribe = datasetService.subscribe(updateSummary);
+    return unsubscribe;
+  }, []);
 
   // Core nowcast horizons (30m, 60m, 90m)
   const p30 = predictions.find((p) => p.horizon_minutes === 30) || predictions[0];
@@ -64,7 +80,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   const p90 = predictions.find((p) => p.horizon_minutes === 90) || predictions[2];
   const primaryHorizons = [p30, p60, p90].filter(Boolean);
 
-  // Intermediate horizons (45m, 75m, etc.) for progressive disclosure
+  // Intermediate horizons (45m, 75m, etc.)
   const intermediateHorizons = predictions.filter(
     (p) => p.horizon_minutes !== 30 && p.horizon_minutes !== 60 && p.horizon_minutes !== 90
   );
@@ -79,20 +95,65 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   return (
     <div className="space-y-8 sm:space-y-10 pb-16">
       {/* ─────────────────────────────────────────────────────────────
+          ORIGINAL DATASET STATUS AREA (LIVE FROM DATASETS OPTION)
+      ───────────────────────────────────────────────────────────── */}
+      <section>
+        <DatasetStatusWidget
+          summary={datasetSummary}
+          onNavigateDatasets={() => onNavigate('datasets')}
+          onSelectState={(st) => {
+            datasetService.setSelectedState(st);
+            onSelectState?.(st);
+          }}
+        />
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
           SECTOR OVERVIEW BRIEFING
       ───────────────────────────────────────────────────────────── */}
       <section className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 p-5 sm:p-7 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="space-y-2 max-w-3xl">
             <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-amber-400">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span className="font-semibold">SECTOR BRIEFING</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="font-semibold text-emerald-400">RADAR SECTOR</span>
               <span>•</span>
               <span className="text-slate-300 font-bold">{location.code}</span>
               <span>•</span>
-              <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                SIMULATION MODE
+              <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                ORIGINAL DATASETS
               </span>
+              {datasetSummary.detectedStates.length > 0 ? (
+                <>
+                  <span>•</span>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span className="text-amber-400 font-mono">STATE:</span>
+                    <select
+                      id="dashboard-briefing-state-selector"
+                      value={datasetSummary.selectedState || datasetSummary.detectedStates[0]}
+                      onChange={(e) => {
+                        datasetService.setSelectedState(e.target.value);
+                        onSelectState?.(e.target.value);
+                      }}
+                      className="bg-transparent text-amber-300 font-mono font-bold focus:outline-none cursor-pointer uppercase"
+                      aria-label="Select state domain from uploaded original datasets"
+                    >
+                      {datasetSummary.detectedStates.map((st) => (
+                        <option key={st} value={st} className="bg-slate-900 text-slate-200 normal-case font-sans">
+                          {st}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : datasetSummary.selectedState ? (
+                <>
+                  <span>•</span>
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    STATE: {datasetSummary.selectedState.toUpperCase()}
+                  </span>
+                </>
+              ) : null}
             </div>
 
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
@@ -100,12 +161,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              Real-time atmospheric nowcasting console monitoring deep convection, lightning flash probability, and squall evolution using in-browser CNN + ConvLSTM spatio-temporal predictions.
+              Atmospheric nowcasting console monitoring deep convection, lightning flash probability, and squall evolution using the proposed CNN + ConvLSTM spatio-temporal architecture.
             </p>
 
-            <div className="pt-1 flex items-center gap-2 text-[11px] text-amber-400/90 font-mono">
-              <Info className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Simulated demonstration data — not for official emergency dissemination.</span>
+            <div className="pt-1 flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+              <Info className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+              <span>Operations bound to verified original datasets. Upload files in the Datasets section.</span>
             </div>
           </div>
 
@@ -115,16 +176,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <span className="text-[10px] uppercase font-mono text-slate-500 block font-semibold">
                 Current Status
               </span>
-              <span className="font-bold text-rose-400 flex items-center gap-1.5 mt-0.5 text-sm">
-                <CloudLightning className="w-4 h-4" /> Convective Inflow
+              <span className="font-bold text-slate-300 flex items-center gap-1.5 mt-0.5 text-sm">
+                <CloudLightning className="w-4 h-4 text-amber-400" />
+                {weather ? `${weather.radar_reflectivity_dbz} dBZ Peak` : 'Awaiting Data'}
               </span>
             </div>
             <div>
               <span className="text-[10px] uppercase font-mono text-slate-500 block font-semibold">
-                30–60m Outlook
+                Nowcast Horizon
               </span>
               <span className="font-bold text-amber-300 font-mono text-sm mt-0.5 block">
-                Peak {p30?.estimated_peak_dbz ?? 55} dBZ Core
+                {p30 ? `${p30.thunderstorm_probability}% Thunderstorm` : 'Awaiting Dataset'}
               </span>
             </div>
           </div>
@@ -149,69 +211,100 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </span>
         </div>
 
-        {/* 3-Column Clean Balanced Grid for Current Risk */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-          {/* 1. Thunderstorm Risk Card */}
-          <RiskCard
-            title="Thunderstorm Risk"
-            riskLevel={p30.risk_level}
-            probability={p30.thunderstorm_probability}
-            subtext="Nowcast Horizon: +30 min lead time"
-            type="thunderstorm"
-          />
+        {p30 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+            {/* 1. Thunderstorm Risk Card */}
+            <RiskCard
+              title="Thunderstorm Risk"
+              riskLevel={p30.risk_level}
+              probability={p30.thunderstorm_probability}
+              subtext="Nowcast Horizon: +30 min lead time"
+              type="thunderstorm"
+            />
 
-          {/* 2. Lightning Risk Card */}
-          <RiskCard
-            title="Lightning Risk"
-            riskLevel={p30.lightning_probability > 70 ? 'HIGH' : p30.lightning_probability > 40 ? 'MEDIUM' : 'LOW'}
-            probability={p30.lightning_probability}
-            subtext={`Expected: ~${p30.expected_strikes_per_min} strikes/min within sector`}
-            type="lightning"
-          />
+            {/* 2. Lightning Risk Card */}
+            <RiskCard
+              title="Lightning Risk"
+              riskLevel={p30.lightning_probability > 70 ? 'HIGH' : p30.lightning_probability > 40 ? 'MEDIUM' : 'LOW'}
+              probability={p30.lightning_probability}
+              subtext={`Expected: ~${p30.expected_strikes_per_min} strikes/min within sector`}
+              type="lightning"
+            />
 
-          {/* 3. Key Environmental Metrics & Instability */}
-          <div className="relative overflow-hidden rounded-xl bg-slate-900/90 border border-slate-800 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Ambient Environment
-                </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300">
-                  Surface Sync
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
-                  <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                    <Thermometer className="w-3.5 h-3.5 text-orange-400" />
-                    <span>Temperature</span>
-                  </div>
-                  <div className="text-xl font-black font-mono text-white mt-1">
-                    {weather.temperature_c}°C
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Dew Point: {weather.dew_point_c}°C</div>
+            {/* 3. Key Environmental Metrics & Instability */}
+            <div className="relative overflow-hidden rounded-xl bg-slate-900/90 border border-slate-800 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Ambient Environment
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300">
+                    Surface Sync
+                  </span>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
-                  <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Data Quality</span>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
+                    <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                      <Thermometer className="w-3.5 h-3.5 text-orange-400" />
+                      <span>Temperature</span>
+                    </div>
+                    <div className="text-xl font-black font-mono text-white mt-1">
+                      {weather ? `${weather.temperature_c}°C` : '—'}
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {weather ? `Dew Point: ${weather.dew_point_c}°C` : 'Awaiting Weather'}
+                    </div>
                   </div>
-                  <div className="text-xl font-black font-mono text-emerald-400 mt-1">
-                    {avgDataQuality}%
+
+                  <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800">
+                    <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Data Quality</span>
+                    </div>
+                    <div className="text-xl font-black font-mono text-emerald-400 mt-1">
+                      {avgDataQuality}%
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">Dataset Ingestion</div>
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">5/5 Sensor Feeds</div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-              <span>Instability (CAPE):</span>
-              <span className="font-mono text-rose-300 font-bold">{weather.cape_j_kg} J/kg</span>
+              <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                <span>Instability (CAPE):</span>
+                <span className="font-mono text-rose-300 font-bold">
+                  {weather ? `${weather.cape_j_kg} J/kg` : '—'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-slate-800 text-amber-400 shrink-0">
+                <FileQuestion className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-bold text-white">Awaiting Original Dataset</h4>
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    No Risk Data Available
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                  Thunderstorm and lightning risk calculations require original Doppler radar sweeps, satellite imagery, or NWP datasets. Upload your original files in the Datasets section.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigate('datasets')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 transition-colors cursor-pointer shrink-0"
+            >
+              <UploadCloud className="w-4 h-4" />
+              Upload Datasets
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
@@ -227,7 +320,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               30 / 60 / 90-Minute Predictions
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Separated AI nowcasting horizons predicting convective echo cell intensity and lightning jump triggers
+              Proposed spatio-temporal ConvLSTM nowcasting horizons predicting convective echo intensity and lightning triggers
             </p>
           </div>
 
@@ -251,25 +344,52 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
 
-        {/* Primary 30, 60, 90 minute prediction cards with generous breathing room */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-          {primaryHorizons.map((pred) => (
-            <PredictionCard key={pred.horizon_minutes} prediction={pred} />
-          ))}
-        </div>
-
-        {/* Progressive disclosure for intermediate horizons */}
-        {showAllHorizons && intermediateHorizons.length > 0 && (
-          <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="text-xs font-mono text-slate-400 uppercase mb-3 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-              <span>Intermediate Spatio-Temporal Timesteps</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {intermediateHorizons.map((pred) => (
+        {primaryHorizons.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+              {primaryHorizons.map((pred) => (
                 <PredictionCard key={pred.horizon_minutes} prediction={pred} />
               ))}
             </div>
+
+            {showAllHorizons && intermediateHorizons.length > 0 && (
+              <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="text-xs font-mono text-slate-400 uppercase mb-3 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                  <span>Intermediate Spatio-Temporal Timesteps</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {intermediateHorizons.map((pred) => (
+                    <PredictionCard key={pred.horizon_minutes} prediction={pred} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-slate-800 text-amber-400 shrink-0">
+                <Clock className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base font-bold text-white">Awaiting Original Dataset</h4>
+                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Proposed ConvLSTM Model
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1 max-w-xl">
+                  This proposed algorithm does not fabricate predictions. Once original meteorological tensor sequences are ingested, 30m, 60m, and 90m nowcast predictions will populate here.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigate('ai-algorithm')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition-colors cursor-pointer shrink-0"
+            >
+              View Algorithm Workflow &rarr;
+            </button>
           </div>
         )}
       </section>
@@ -287,7 +407,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               GIS Risk Map &amp; Storm Geometry
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Interactive Leaflet GIS map with OpenStreetMap tiles centered on Tamil Nadu sector showing simulated convective echo cells and polygons
+              Interactive Leaflet GIS map with OpenStreetMap tiles centered on Tamil Nadu sector showing original dataset convective echo cells and polygons
             </p>
           </div>
 
@@ -305,7 +425,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
 
-        {/* Full-width, high-visibility GIS Map with generous height */}
+        {/* Full-width GIS Map */}
         <div className="rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-xl">
           <LeafletMap
             center={[location.latitude, location.longitude]}
@@ -345,7 +465,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </span>
         </div>
 
-        {/* Clean 2-Column Responsive Grid with plenty of room */}
+        {/* 2-Column Responsive Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Active Alerts Panel */}
           <div className="rounded-2xl bg-slate-900/90 border border-slate-800 p-5 sm:p-6 shadow-sm space-y-4">
@@ -372,7 +492,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               ))}
               {activeAlerts.length === 0 && (
                 <div className="p-6 text-center text-xs text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800">
-                  No active emergency alerts in sector.
+                  No active emergency alerts from current datasets.
                 </div>
               )}
             </div>
@@ -409,6 +529,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   }}
                 />
               ))}
+              {storms.length === 0 && (
+                <div className="p-6 text-center text-xs text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800">
+                  No tracked convective storm cells in sector. Upload Doppler radar data in Datasets.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -446,7 +571,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
           <div>
             <div className="text-slate-200 font-bold text-sm">
-              Operational Ingestion &amp; Quality Index ({avgDataQuality}% Nominal)
+              Operational Dataset Ingestion &amp; Quality Index ({avgDataQuality}% Nominal)
             </div>
             <p className="mt-0.5 text-slate-400 text-xs">
               Continuous assimilation of Doppler radar velocity, INSAT-3D infrared cloud brightness temperatures, and ground lightning detection network strikes.
@@ -456,10 +581,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
         <div className="flex items-center gap-3 shrink-0">
           <button
-            onClick={() => onNavigate('data-status')}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+            onClick={() => onNavigate('datasets')}
+            className="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-semibold transition-colors cursor-pointer"
           >
-            Inspect Data Feeds
+            Manage Datasets
           </button>
         </div>
       </section>

@@ -46,11 +46,11 @@ export const AlertsPage: React.FC<AlertsPageProps> = ({ alerts }) => {
         </div>
 
         {/* Prototype Alert Disclaimer Pill */}
-        <div className="px-3 py-2 rounded-xl bg-rose-950/40 border border-rose-900/60 text-xs text-rose-300">
-          <span className="font-bold block text-[11px] uppercase tracking-wider text-rose-400">
-            Prototype Only
+        <div className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300">
+          <span className="font-bold block text-[11px] uppercase tracking-wider text-amber-400">
+            Original Datasets
           </span>
-          <span className="text-[10px] text-rose-300/80">Simulated Emergency Protocol</span>
+          <span className="text-[10px] text-slate-400">Targeted Advisory Engine</span>
         </div>
       </div>
 
@@ -111,22 +111,33 @@ export const AlertsPage: React.FC<AlertsPageProps> = ({ alerts }) => {
         </span>
       </div>
 
-      {/* Alert Cards List */}
-      <div className="space-y-3.5">
-        {filteredAlerts.map((alert) => (
-          <AlertCard key={alert.id} alert={alert} />
-        ))}
-      </div>
+      {/* Alert Cards List or Empty State */}
+      {filteredAlerts.length > 0 ? (
+        <div className="space-y-3.5">
+          {filteredAlerts.map((alert) => (
+            <AlertCard key={alert.id} alert={alert} />
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-8 text-center space-y-2">
+          <p className="text-sm font-bold text-white">No active alerts</p>
+          <p className="text-xs text-slate-400">
+            {alerts.length === 0
+              ? 'Awaiting Original Dataset: Alert bulletins generate automatically when threshold conditions are exceeded in uploaded datasets.'
+              : 'No alerts match the selected filter.'}
+          </p>
+        </div>
+      )}
 
       {/* Strict Prototype Disclaimer Footer as required by user prompt */}
-      <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-800/40 text-xs text-amber-300 flex items-start gap-3">
+      <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 flex items-start gap-3">
         <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
         <div>
           <h4 className="font-bold text-amber-300 uppercase tracking-wide">
-            IMPORTANT PROTOTYPE SAFETY NOTICE
+            IMPORTANT METEOROLOGICAL NOTICE
           </h4>
-          <p className="mt-1 text-slate-300 leading-relaxed">
-            These are prototype alerts for simulation and disaster management system evaluation. Do NOT send real emergency notifications or deploy public safety sirens based solely on prototype output without official Meteorological Department confirmation.
+          <p className="mt-1 text-slate-400 leading-relaxed">
+            These are automated bulletins derived from uploaded dataset parameters for disaster management system evaluation. Always cross-reference with official National Meteorological Department warnings before taking emergency actions.
           </p>
         </div>
       </div>

@@ -10,6 +10,7 @@ export const DataStatusCard: React.FC<DataStatusCardProps> = ({ source }) => {
   const getStatusBadge = (status: DataSourceStatus) => {
     switch (status) {
       case 'Available':
+      case 'ORIGINAL DATASET':
         return {
           bg: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300',
           icon: CheckCircle2,
@@ -22,12 +23,13 @@ export const DataStatusCard: React.FC<DataStatusCardProps> = ({ source }) => {
           dot: 'bg-sky-400',
         };
       case 'Delayed':
+      case 'Degraded':
         return {
           bg: 'bg-rose-500/15 border-rose-500/40 text-rose-300',
           icon: AlertTriangle,
           dot: 'bg-rose-400',
         };
-      case 'Demo Data':
+      case 'Awaiting Dataset':
       default:
         return {
           bg: 'bg-amber-500/15 border-amber-500/40 text-amber-300',

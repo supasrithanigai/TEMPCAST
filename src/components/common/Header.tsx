@@ -48,12 +48,12 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-slate-950" />
           </div>
 
-          <div>
+            <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
                 TEMPESTCAST
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold tracking-wider animate-pulse flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5" /> SIMULATION MODE
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold tracking-wider">
+                  ORIGINAL DATASETS
                 </span>
               </h1>
             </div>
@@ -76,11 +76,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* System Status: Simulation active */}
+          {/* System Status: Original Data */}
           <div className="hidden lg:flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span className="text-slate-400">Mode:</span>
-            <span className="font-mono text-amber-400 font-medium">In-Browser Sim</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-slate-400">Data:</span>
+            <span className="font-mono text-emerald-400 font-medium">Original Datasets</span>
           </div>
 
           {/* Location Selector */}
@@ -100,29 +100,29 @@ export const Header: React.FC<HeaderProps> = ({
             </select>
           </div>
 
-          {/* Re-simulate / Refresh button */}
+          {/* Refresh button */}
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 text-xs font-medium border border-slate-700/60 transition-colors disabled:opacity-50 cursor-pointer"
-            title="Update simulation telemetry & run nowcast rollout"
+            title="Update telemetry & nowcast feeds"
           >
             <Activity className={`w-3.5 h-3.5 text-amber-400 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="inline">{isRefreshing ? 'Simulating...' : 'Simulate'}</span>
+            <span className="inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
         </div>
       </div>
 
-      {/* Prominent Simulation Mode Disclaimer Notice */}
-      <div className="bg-amber-950/30 border-t border-amber-900/40 px-4 lg:px-6 py-1 flex items-center justify-between text-[11px] text-amber-200/90 font-mono">
+      {/* Dataset Status Banner */}
+      <div className="bg-slate-900/80 border-t border-slate-800 px-4 lg:px-6 py-1 flex items-center justify-between text-[11px] text-slate-300 font-mono">
         <div className="flex items-center gap-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
           <Info className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
           <span>
-            <strong>SIMULATION / DEMO MODE:</strong> Predictions and radar feeds are simulated for demonstration. They are not official weather warnings.
+            <strong>DATASET STATUS:</strong> TEMPESTCAST operates with original uploaded datasets. Upload new files in the Datasets section.
           </span>
         </div>
         <div className="hidden sm:flex items-center gap-2 text-slate-400 text-[10px]">
-          <span>CNN + ConvLSTM Nowcasting Engine</span>
+          <span>Proposed CNN + ConvLSTM Processing Architecture</span>
         </div>
       </div>
     </header>

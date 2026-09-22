@@ -90,16 +90,16 @@ export const DataStatusPage: React.FC<DataStatusPageProps> = ({ dataSources }) =
         </div>
       </div>
 
-      {/* Prototype Simulated Data Disclaimer Banner */}
-      <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-800/40 text-xs text-amber-300 flex items-center justify-between gap-3">
+      {/* Original Dataset Ingestion Banner */}
+      <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
           <span>
-            <strong>Prototype Data Notice:</strong> "Prototype currently uses simulated/demo data where live datasets are unavailable."
+            <strong>Dataset Ingestion Pipeline:</strong> Telemetry streams and original uploaded datasets are validated against schema standards.
           </span>
         </div>
-        <span className="hidden sm:inline font-mono text-[10px] text-amber-400/80 border border-amber-800/60 px-2 py-0.5 rounded">
-          DEMO FEEDS ACTIVE
+        <span className="hidden sm:inline font-mono text-[10px] text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded bg-emerald-500/10">
+          ORIGINAL DATASETS
         </span>
       </div>
 

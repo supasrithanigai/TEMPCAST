@@ -256,11 +256,11 @@ export const ModelPipeline: React.FC<ModelPipelineProps> = ({
         })}
       </div>
 
-      {/* Student Prototype Disclaimer Box */}
-      <div className="mt-5 p-3 rounded-lg bg-amber-950/20 border border-amber-800/40 text-xs text-amber-300/90 flex items-start gap-2.5">
+      {/* Scientific Framework Notice */}
+      <div className="mt-5 p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300 flex items-start gap-2.5">
         <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
         <p className="leading-relaxed">
-          <strong>Scientific Notice:</strong> This is a disaster management student prototype. The CNN + ConvLSTM architecture is defined and structured for future training on historical NEXRAD Doppler volumes and GOES/GLM satellite datasets. Current predictions utilize simulated telemetry feeds.
+          <strong>Processing Pipeline:</strong> Proposed CNN + ConvLSTM spatio-temporal architecture designed to execute directly on uploaded original radar volumes, satellite imagery, lightning strikes, and AWS surface station observations.
         </p>
       </div>
     </div>

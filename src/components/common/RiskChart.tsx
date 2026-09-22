@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PredictionHorizon } from '../../types';
+import { Clock, TrendingUp, HelpCircle, FileQuestion } from 'lucide-react';
 
 interface RiskChartProps {
   predictions: PredictionHorizon[];
@@ -16,10 +17,31 @@ export const RiskChart: React.FC<RiskChartProps> = ({
 }) => {
   const [activePointIndex, setActivePointIndex] = useState<number | null>(null);
 
+  if (!predictions || predictions.length === 0) {
+    return (
+      <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-6 sm:p-8 text-center space-y-3">
+        <div className="w-12 h-12 rounded-xl bg-slate-800/80 text-amber-400 flex items-center justify-center mx-auto">
+          <Clock className="w-6 h-6" />
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center justify-center gap-2">
+            <h3 className="text-base font-bold text-white">{title}</h3>
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+              Awaiting Original Dataset
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            Progression curve will generate upon ingestion and spatial-temporal tensor extraction of original datasets.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Synthesize a continuous curve from now (t=0) through 30m, 60m, 90m
   const p30 = predictions.find((p) => p.horizon_minutes === 30) || predictions[0];
-  const p60 = predictions.find((p) => p.horizon_minutes === 60) || predictions[1];
-  const p90 = predictions.find((p) => p.horizon_minutes === 90) || predictions[2];
+  const p60 = predictions.find((p) => p.horizon_minutes === 60) || predictions[1] || p30;
+  const p90 = predictions.find((p) => p.horizon_minutes === 90) || predictions[2] || p60;
 
   const nowProb = Math.max(10, Math.round(p30.thunderstorm_probability * 0.7));
   const nowLtg = Math.max(5, Math.round(p30.lightning_probability * 0.65));
@@ -71,111 +93,102 @@ export const RiskChart: React.FC<RiskChartProps> = ({
     },
   ];
 
-  // SVG Chart Geometry
-  const width = 680;
-  const height = 270;
-  const padLeft = 45;
-  const padRight = 25;
-  const padTop = 25;
-  const padBottom = 35;
-  const chartWidth = width - padLeft - padRight;
-  const chartHeight = height - padTop - padBottom;
+  // SVG dimensions
+  const width = 800;
+  const height = 260;
+  const padding = { top: 30, right: 30, bottom: 45, left: 50 };
 
-  const getX = (index: number) => padLeft + (index / (points.length - 1)) * chartWidth;
-  const getY = (val: number) => padTop + chartHeight - (val / 100) * chartHeight;
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
 
-  // Generate SVG path strings
-  const buildSmoothPath = (key: 'tProb' | 'lProb' | 'conf') => {
-    return points.reduce((path, pt, i) => {
-      const x = getX(i);
-      const y = getY(pt[key]);
-      return i === 0 ? `M ${x},${y}` : `${path} L ${x},${y}`;
+  const getX = (minute: number) => padding.left + (minute / 90) * innerWidth;
+  const getY = (val: number) => padding.top + innerHeight - (val / 100) * innerHeight;
+
+  const buildPath = (key: 'tProb' | 'lProb' | 'conf') => {
+    return points.reduce((acc, curr, idx) => {
+      const x = getX(curr.minute);
+      const y = getY(curr[key]);
+      return `${acc} ${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
     }, '');
   };
 
-  const tProbPath = buildSmoothPath('tProb');
-  const lProbPath = buildSmoothPath('lProb');
-  const confPath = buildSmoothPath('conf');
+  const buildArea = (key: 'tProb') => {
+    const linePath = buildPath(key);
+    const lastX = getX(90);
+    const firstX = getX(0);
+    const bottomY = getY(0);
+    return `${linePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
+  };
 
   const activePoint = activePointIndex !== null ? points[activePointIndex] : null;
 
   return (
     <div className="rounded-xl bg-slate-900/90 border border-slate-800 p-5 sm:p-6 shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
         <div>
-          <h3 className="text-base font-bold text-white">{title}</h3>
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-amber-400" />
+            {title}
+          </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Temporal rollout sequence synthesized by ConvLSTM layer weights across 90 minutes
+            Original dataset time-horizon evolution
           </p>
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 text-xs font-semibold">
-          <div className="flex items-center gap-1.5 bg-amber-950/40 px-2.5 py-1 rounded-md border border-amber-800/40">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm shadow-amber-500/50" />
-            <span className="text-amber-200">Storm Risk %</span>
+        <div className="flex items-center gap-4 text-xs font-mono">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-1 bg-amber-400 rounded-full" />
+            <span className="text-slate-300">Thunderstorm</span>
           </div>
           {showLightning && (
-            <div className="flex items-center gap-1.5 bg-yellow-950/40 px-2.5 py-1 rounded-md border border-yellow-800/40">
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-              <span className="text-yellow-200">Lightning %</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-1 bg-yellow-400 rounded-full" />
+              <span className="text-slate-300">Lightning</span>
             </div>
           )}
           {showConfidence && (
-            <div className="flex items-center gap-1.5 bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-800/40">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-              <span className="text-emerald-200">Confidence %</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-1 bg-emerald-400 rounded-full stroke-dasharray" />
+              <span className="text-slate-400">Confidence</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Chart Canvas */}
-      <div className="relative mt-4 w-full overflow-x-auto">
+      {/* SVG Chart Canvas */}
+      <div className="relative mt-4 overflow-x-auto">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-auto min-w-[540px] select-none"
+          className="w-full h-auto min-w-[600px] select-none"
         >
           <defs>
-            <linearGradient id="stormGradient" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="tProbGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.3" />
               <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
             </linearGradient>
-            <linearGradient id="lightningGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#facc15" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#facc15" stopOpacity="0.0" />
-            </linearGradient>
           </defs>
 
-          {/* Grid lines & Y Axis values */}
-          {[0, 20, 40, 60, 70, 80, 100].map((val) => {
+          {/* Grid lines */}
+          {[0, 25, 50, 75, 100].map((val) => {
             const y = getY(val);
-            const isHighThreshold = val === 70;
-            const isMedThreshold = val === 40;
             return (
               <g key={val}>
                 <line
-                  x1={padLeft}
+                  x1={padding.left}
                   y1={y}
-                  x2={width - padRight}
+                  x2={width - padding.right}
                   y2={y}
-                  stroke={
-                    isHighThreshold
-                      ? '#ef4444'
-                      : isMedThreshold
-                      ? '#f59e0b'
-                      : '#334155'
-                  }
-                  strokeWidth={isHighThreshold || isMedThreshold ? 1 : 0.75}
-                  strokeDasharray={isHighThreshold || isMedThreshold ? '4 3' : '2 2'}
-                  strokeOpacity={isHighThreshold || isMedThreshold ? 0.6 : 0.4}
+                  stroke="#334155"
+                  strokeDasharray="3 3"
+                  strokeWidth="0.8"
                 />
                 <text
-                  x={padLeft - 8}
+                  x={padding.left - 8}
                   y={y + 3}
                   textAnchor="end"
-                  fill="#94a3b8"
                   fontSize="10"
+                  fill="#94a3b8"
                   fontFamily="monospace"
                 >
                   {val}%
@@ -184,122 +197,102 @@ export const RiskChart: React.FC<RiskChartProps> = ({
             );
           })}
 
-          {/* Area fill for storm probability */}
-          <path
-            d={`${tProbPath} L ${getX(points.length - 1)},${getY(0)} L ${getX(0)},${getY(0)} Z`}
-            fill="url(#stormGradient)"
-          />
+          {/* X Axis Time Labels */}
+          {points.map((p) => {
+            const x = getX(p.minute);
+            return (
+              <g key={p.minute}>
+                <line
+                  x1={x}
+                  y1={padding.top}
+                  x2={x}
+                  y2={height - padding.bottom}
+                  stroke="#1e293b"
+                  strokeWidth="1"
+                />
+                <text
+                  x={x}
+                  y={height - padding.bottom + 18}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fill="#94a3b8"
+                  fontWeight="600"
+                  fontFamily="monospace"
+                >
+                  {p.label}
+                </text>
+              </g>
+            );
+          })}
 
-          {/* Lines */}
+          {/* Thunderstorm Area fill */}
+          <path d={buildArea('tProb')} fill="url(#tProbGrad)" />
+
+          {/* Confidence Line */}
           {showConfidence && (
             <path
-              d={confPath}
+              d={buildPath('conf')}
               fill="none"
               stroke="#10b981"
-              strokeWidth="2"
-              strokeDasharray="4 2"
+              strokeWidth="1.5"
+              strokeDasharray="4 4"
+              opacity="0.7"
             />
           )}
 
+          {/* Lightning Line */}
           {showLightning && (
             <path
-              d={lProbPath}
+              d={buildPath('lProb')}
               fill="none"
-              stroke="#facc15"
+              stroke="#eab308"
               strokeWidth="2"
             />
           )}
 
+          {/* Thunderstorm Line */}
           <path
-            d={tProbPath}
+            d={buildPath('tProb')}
             fill="none"
             stroke="#f59e0b"
             strokeWidth="3"
           />
 
-          {/* Data interactive points */}
-          {points.map((pt, i) => {
-            const x = getX(i);
-            const yt = getY(pt.tProb);
-            const isSelected = activePointIndex === i;
+          {/* Interactive points */}
+          {points.map((p, idx) => {
+            const x = getX(p.minute);
+            const yT = getY(p.tProb);
+            const isSelected = activePointIndex === idx;
 
             return (
               <g
-                key={pt.minute}
+                key={idx}
                 className="cursor-pointer"
-                onMouseEnter={() => setActivePointIndex(i)}
-                onClick={() => setActivePointIndex(i)}
+                onMouseEnter={() => setActivePointIndex(idx)}
+                onMouseLeave={() => setActivePointIndex(null)}
               >
-                {/* Invisible hover target */}
-                <rect
-                  x={x - 18}
-                  y={padTop}
-                  width="36"
-                  height={chartHeight}
-                  fill="transparent"
-                />
-
-                {isSelected && (
-                  <line
-                    x1={x}
-                    y1={padTop}
-                    x2={x}
-                    y2={padTop + chartHeight}
-                    stroke="#e2e8f0"
-                    strokeWidth="1"
-                    strokeDasharray="3 3"
-                    strokeOpacity="0.5"
-                  />
-                )}
-
-                {/* Storm prob node */}
                 <circle
                   cx={x}
-                  cy={yt}
-                  r={isSelected ? 5 : 3.5}
+                  cy={yT}
+                  r={isSelected ? 6 : 4}
                   fill="#f59e0b"
                   stroke="#0f172a"
                   strokeWidth="2"
                 />
-
-                {/* X Axis label */}
-                <text
-                  x={x}
-                  y={height - 8}
-                  textAnchor="middle"
-                  fill={isSelected ? '#f8fafc' : '#94a3b8'}
-                  fontSize="10"
-                  fontWeight={isSelected ? 'bold' : 'normal'}
-                  fontFamily="monospace"
-                >
-                  {pt.label}
-                </text>
               </g>
             );
           })}
         </svg>
 
-        {/* Dynamic Tooltip / Details on hover */}
+        {/* Hover info tooltip */}
         {activePoint && (
-          <div className="flex items-center justify-between gap-4 p-2.5 mt-2 rounded-lg bg-slate-950 border border-slate-700 text-xs">
-            <span className="font-bold text-amber-400 font-mono">
-              Timeline: {activePoint.label}
-            </span>
-            <div className="flex items-center gap-4 font-mono">
-              <span className="text-amber-300">
-                Thunderstorm: <strong>{activePoint.tProb}%</strong>
-              </span>
-              {showLightning && (
-                <span className="text-yellow-300">
-                  Lightning: <strong>{activePoint.lProb}%</strong>
-                </span>
-              )}
-              {showConfidence && (
-                <span className="text-emerald-300">
-                  Confidence: <strong>{activePoint.conf}%</strong>
-                </span>
-              )}
-            </div>
+          <div
+            className="absolute top-2 right-4 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono shadow-xl pointer-events-none"
+          >
+            <div className="font-bold text-amber-400 mb-1">{activePoint.label} Horizon</div>
+            <div className="text-slate-300">Thunderstorm: <strong className="text-amber-400">{activePoint.tProb}%</strong></div>
+            {showLightning && <div className="text-slate-300">Lightning: <strong className="text-yellow-400">{activePoint.lProb}%</strong></div>}
+            {showConfidence && <div className="text-slate-400 text-[11px]">Confidence: {activePoint.conf}%</div>}
           </div>
         )}
       </div>
